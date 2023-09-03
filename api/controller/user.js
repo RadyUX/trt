@@ -2,12 +2,7 @@ const  UserModel = require("../models/User")
 
 const getUser = (req, res, next) => {
     
-    UserModel.findOne({
-        attributes: ["role"],
-        where: {
-            name: 'admin',
-        },
-    })
+    UserModel.findAll()
     .then((result) => {
       	return res.json(result);
     })

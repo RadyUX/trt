@@ -1,3 +1,4 @@
+//if user loged in
 function authUser(req,res ,next) {
     if(req.user == null){
         res.status(403)
@@ -5,4 +6,16 @@ function authUser(req,res ,next) {
     }
     next()
 }
+
+
+function authRole(role){
+    return(req,res, next)=>{
+        res.status(401)
+        return res.send("not allowed")
+    }
+
+    next()
+}
+
+
   module.exports = authUser
