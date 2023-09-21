@@ -1,6 +1,7 @@
 
 import JobCard from './component/Card'
 import Sidebar from './component/SideBar'
+import Register from './component/Register'
 import './index.css'
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
 
             </div>
             <Sidebar isLoggedIn={false} />
+            <Register />
         </div>
   )
 }
