@@ -74,7 +74,7 @@ const login = async (req, res) => {
                 name: user.name, 
                 email: user.email, 
                 role: user.role
-            }, process.env.JWT, { expiresIn: '30s' });
+            }, process.env.JWT, { expiresIn: '1d' });
 
             const refreshToken = jwt.sign({
                 id: user.id, 
@@ -98,14 +98,15 @@ const login = async (req, res) => {
 }
 
 // Route pour rafraîchir le token
-const refreshToken = async (req, res) => {
-    const token = req.cookies.refreshToken;
+const handlerefreshToken = async (req, res) => {
+    const cookies = req.cookies;
     
-    if (!token) return res.sendStatus(401);
+    if (!cookies?.refreshToken) return res.sendStatus(401);
+    
+    const refreshToken = cookies.refreshToken;
 
-    // Vérifiez si le refreshToken est valide et existe dans votre base de données
-
-    jwt.verify(token, process.env.REFRESH, (err, user) => {
+    // Vérifier le refreshToken
+    jwt.verify(refreshToken, process.env.REFRESH, (err, user) => {
         if (err) return res.sendStatus(403);
         
         const accessToken = jwt.sign({
@@ -115,8 +116,11 @@ const refreshToken = async (req, res) => {
             role: user.role
         }, process.env.JWT, { expiresIn: '30s' });
 
+    
         res.json({ accessToken });
     });
 }
 
-module.exports = { register, login, refreshToken };
+
+
+module.exports = { register, login, handlerefreshToken };

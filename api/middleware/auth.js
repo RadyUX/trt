@@ -1,9 +1,11 @@
 const jwt = require("jsonwebtoken")
+const dotenv = require("dotenv")
+dotenv.config();
 
 function authRole(role) {
     return (req, res, next) => {
         try {
-            const token = req.cookies.token;
+            const token = req.cookies.accessToken;
             if(!token) {
                 return res.status(401).json({ message: "Authorization header missing." });
             }
@@ -13,9 +15,11 @@ function authRole(role) {
             if (!decodedToken.role || decodedToken.role !== role) {
                 return res.status(403).json({ message: `Access denied. You don't have the required role : ${role}` });
             }
+            console.log("Decoded token:", decodedToken);
 
             next();  // If role matches, continue to the next middleware or route handler
         } catch (error) {
+            console.error("JWT verification failed:", error)
             return res.status(401).json({ message: "Invalid token." });
         }
     }

@@ -22,7 +22,12 @@ const User = sequelize.define('User', {
   role: {
     type: DataTypes.ENUM('recruiter', 'candidate', 'consultant', 'admin'),
     allowNull: false
-  }
+  },
+  refreshToken: {
+    type: DataTypes.STRING,
+    allowNull: true
+}
+
 });
 
 module.exports = User;
