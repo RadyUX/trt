@@ -3,6 +3,8 @@ const User = require('../models/User')
 const jwt = require("jsonwebtoken")
 const sequelize = require("sequelize")
 const dotenv = require("dotenv")
+const Recruiter = require("../models/Recruiter")
+const Candidate = require("../models/Candidate")
 //signup logique
 
 const register = async (req, res, role)=>{
@@ -33,6 +35,22 @@ const register = async (req, res, role)=>{
         });
 
         await newUser.save()
+
+        if (req.body.role === 'recruiter') {
+            await Recruiter.create({
+                userId: newUser.id,
+               
+            });
+        }
+
+        if (req.body.role === 'candidate') {
+            await Candidate.create({
+                userId: newUser.id,
+                name:  newUser.name,
+                
+               
+            });
+        }
         return res.status(201).json({ message: "Hurry! now you are successfully registered. Please now login." });
 
     } catch (err) {
@@ -40,44 +58,65 @@ const register = async (req, res, role)=>{
     }
 }
 
-const login = async (req, res) =>{
-
+const login = async (req, res) => {
     try {
-        // Trouvez l'utilisateur dans la base de données en utilisant l'e-mail fourni
         const user = await User.findOne({ where: { email: req.body.email } });
         
-        // Si l'utilisateur n'existe pas
         if (!user) {
             return res.status(400).json({ message: 'Invalid email' });
         }
-       
-        // Vérifiez le mot de passe avec bcrypt
+
         const isValidPassword = await bcrypt.compare(req.body.password, user.password);
-        if(isValidPassword){
-            token = jwt.sign({ "id" : user.id,"name" : user.name,"email":user.email, "role": user.role},process.env.JWT);
-            res.cookie('token' , token, { httpOnly: true, secure: true, SameSite: 'strict' , expires: new Date(Number(new Date()) + 30*60*1000) }).status(200).json({ token : token });
         
+        if(isValidPassword) {
+            const accessToken = jwt.sign({
+                id: user.id, 
+                name: user.name, 
+                email: user.email, 
+                role: user.role
+            }, process.env.JWT, { expiresIn: '30s' });
+
+            const refreshToken = jwt.sign({
+                id: user.id, 
+                name: user.name, 
+                email: user.email, 
+                role: user.role
+            }, process.env.REFRESH, { expiresIn: '1d' });
+
+            // Stockez le refreshToken dans la base de données ou une structure de données appropriée
+
+            res.cookie('accessToken', accessToken, { httpOnly: true, secure: true, SameSite: 'strict' });
+            res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, SameSite: 'strict' });
+
+            return res.status(200).json({ accessToken });
         } else {
             return res.status(400).json({ message: 'Invalid password' });
-      
-
         }
-        // Si le mot de passe n'est pas valide
-  
-        // À ce stade, l'utilisateur est authentifié. Vous pouvez maintenant vérifier son rôle.
-        const userRole = user.role;
-
-        // Ici, vous pouvez implémenter la logique pour attribuer des permissions en fonction du rôle de l'utilisateur.
-        // Par exemple:
-        if (userRole === 'admin') {
-         console.log("admin")
-        } 
-
-       
-
     } catch (err) {
         return res.status(500).json({ message: `Error: ${err.message}` });
     }
 }
 
-module.exports = {register, login}
+// Route pour rafraîchir le token
+const refreshToken = async (req, res) => {
+    const token = req.cookies.refreshToken;
+    
+    if (!token) return res.sendStatus(401);
+
+    // Vérifiez si le refreshToken est valide et existe dans votre base de données
+
+    jwt.verify(token, process.env.REFRESH, (err, user) => {
+        if (err) return res.sendStatus(403);
+        
+        const accessToken = jwt.sign({
+            id: user.id, 
+            name: user.name, 
+            email: user.email, 
+            role: user.role
+        }, process.env.JWT, { expiresIn: '30s' });
+
+        res.json({ accessToken });
+    });
+}
+
+module.exports = { register, login, refreshToken };
